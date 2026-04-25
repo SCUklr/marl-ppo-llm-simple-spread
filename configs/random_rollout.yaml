@@ -1,0 +1,15 @@
+environment:
+  name: simple_spread_v3
+  num_agents: 3
+  num_landmarks: 3
+  max_cycles: 25
+  continuous_actions: true
+  local_ratio: 0.5
+  render_mode: null
+
+rollout:
+  episodes: 3
+  seed: 0
+
+logging:
+  output_path: logs/random_rollout.csv
