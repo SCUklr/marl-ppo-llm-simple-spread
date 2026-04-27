@@ -2,7 +2,7 @@
 
 This project studies multi-agent reinforcement learning on PettingZoo Simple Spread. The planned methods are Independent PPO (IPPO), a MAPPO-style centralized critic comparison, and optional LLM-assisted high-level guidance.
 
-The current first iteration provides the project scaffold and a random-policy smoke test for validating the environment, metrics, config loading, and logging.
+The current implementation provides the project scaffold, a random-policy smoke test, IPPO training, a MAPPO-style centralized critic baseline, optional heuristic LLM guidance, evaluation, and plotting.
 
 ## Setup
 
@@ -43,14 +43,58 @@ Expected output:
 - Summary metrics printed in the terminal.
 - A CSV log saved to `logs/random_rollout.csv`.
 
-## Planned Training Commands
+## Training Commands
 
-These commands will be enabled in later iterations:
+Run short smoke tests first:
 
 ```bash
-python src/train.py --config configs/ippo.yaml
-python src/train.py --config configs/mappo.yaml
-python src/train.py --config configs/llm_guidance.yaml
+.venv/bin/python src/train.py --config configs/ippo.yaml --episodes 4 --seed 0
+.venv/bin/python src/train.py --config configs/mappo.yaml --episodes 4 --seed 0
+.venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 4 --seed 0
+```
+
+Run the lightweight official experiment suite:
+
+```bash
+.venv/bin/python scripts/run_lightweight_experiments.py --episodes 500 --seeds 0 1 2
+```
+
+This runs 3 methods x 3 seeds:
+
+- IPPO: seeds 0, 1, 2
+- MAPPO-style PPO: seeds 0, 1, 2
+- LLM-guided IPPO: seeds 0, 1, 2
+
+For a faster rehearsal, use fewer episodes:
+
+```bash
+.venv/bin/python scripts/run_lightweight_experiments.py --episodes 300 --seeds 0 1 2
+```
+
+Single-seed runs are also supported:
+
+```bash
+.venv/bin/python src/train.py --config configs/ippo.yaml --episodes 500 --seed 0
+.venv/bin/python src/train.py --config configs/mappo.yaml --episodes 500 --seed 0
+.venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 500 --seed 0
+```
+
+## Evaluation and Plotting
+
+Evaluate a saved checkpoint:
+
+```bash
+.venv/bin/python src/evaluate.py \
+  --config configs/ippo.yaml \
+  --checkpoint checkpoints/ippo_seed_0_best.pt \
+  --episodes 10 \
+  --output results/ippo_eval.csv
+```
+
+Generate plots from training logs:
+
+```bash
+.venv/bin/python src/plot_results.py --output_dir results
 ```
 
 ## Project Structure
@@ -58,12 +102,23 @@ python src/train.py --config configs/llm_guidance.yaml
 ```text
 marl-ppo-llm-simple-spread/
 ├── configs/
-│   └── random_rollout.yaml
+│   ├── random_rollout.yaml
+│   ├── ippo.yaml
+│   ├── mappo.yaml
+│   └── llm_guidance.yaml
+├── scripts/
+│   └── run_lightweight_experiments.py
 ├── src/
 │   ├── envs/
 │   │   └── simple_spread_wrapper.py
 │   ├── algorithms/
+│   │   ├── common.py
+│   │   ├── ippo.py
+│   │   └── mappo.py
 │   ├── llm/
+│   │   └── guidance.py
+│   ├── evaluate.py
+│   ├── plot_results.py
 │   ├── train.py
 │   └── utils.py
 ├── logs/
@@ -78,4 +133,24 @@ Develop and run short tests on the MacBook Pro. Run full multi-seed experiments 
 
 ## LLM API Keys
 
-LLM guidance is optional. If used, copy `.env.example` to `.env` and fill in the provider key. Do not commit `.env`.
+LLM guidance is optional. The current `configs/llm_guidance.yaml` is configured for Qwen / DashScope OpenAI-compatible mode, but it safely falls back to a local heuristic if `LLM_API_KEY` is not set.
+
+To use Qwen, copy `.env.example` to `.env` and fill in:
+
+```bash
+LLM_API_KEY=your_qwen_key_here
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_MODEL=qwen-plus
+```
+
+Do not commit `.env`.
+
+Test the provider before training:
+
+```bash
+.venv/bin/python scripts/test_llm_provider.py --config configs/llm_guidance.yaml
+```
+
+If the key works, the output should show `source=qwen`. If no key is found or the provider fails, it will show `source=heuristic` or `source=heuristic_fallback`.
+
+The lightweight config refreshes guidance every 100 episodes. With 3 seeds x 500 episodes, this means about 15 guidance refreshes for the LLM-guided method. If replaced with a real API provider, expect about 15 API calls for the default lightweight run, or 9 API calls for 3 seeds x 300 episodes.

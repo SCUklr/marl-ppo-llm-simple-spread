@@ -50,6 +50,21 @@ def write_dict_rows(path: str | Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def append_dict_rows(path: str | Path, rows: list[dict[str, Any]]) -> None:
+    """Append dictionaries to CSV, writing the header if the file is new."""
+    if not rows:
+        return
+
+    output_path = ensure_parent_dir(path)
+    fieldnames = list(rows[0].keys())
+    should_write_header = not output_path.exists()
+    with output_path.open("a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        if should_write_header:
+            writer.writeheader()
+        writer.writerows(rows)
+
+
 def flatten_dict(prefix: str, values: dict[str, Any]) -> dict[str, Any]:
     """Flatten one level of nested metrics for CSV-friendly logging."""
     return {f"{prefix}_{key}": value for key, value in values.items()}

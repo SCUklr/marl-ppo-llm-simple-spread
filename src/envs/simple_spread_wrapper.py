@@ -79,6 +79,25 @@ class SimpleSpreadWrapper:
             for agent in self.env.agents
         }
 
+    def observation_dim(self) -> int:
+        """Return the local observation dimension."""
+        return int(np.prod(self.env.observation_space(self.possible_agents[0]).shape))
+
+    def action_dim(self) -> int:
+        """Return the action dimension."""
+        return int(np.prod(self.env.action_space(self.possible_agents[0]).shape))
+
+    def action_bounds(self) -> tuple[np.ndarray, np.ndarray]:
+        """Return low and high action bounds for continuous actions."""
+        space = self.env.action_space(self.possible_agents[0])
+        low = np.asarray(space.low, dtype=np.float32)
+        high = np.asarray(space.high, dtype=np.float32)
+        return low, high
+
+    def global_observation_dim(self) -> int:
+        """Return the concatenated observation dimension."""
+        return self.observation_dim() * len(self.possible_agents)
+
     def global_observation(self, observations: dict[str, np.ndarray]) -> np.ndarray:
         """Concatenate agent observations into a simple centralized input."""
         ordered = [observations[agent] for agent in self.possible_agents if agent in observations]
@@ -119,6 +138,22 @@ class SimpleSpreadWrapper:
             "coverage_distance": coverage_distance,
             "collision_count": float(collision_count),
         }
+
+    def state_snapshot(self) -> dict[str, dict[str, np.ndarray]]:
+        """Return current agent and landmark positions for guidance modules."""
+        world = getattr(getattr(self.env, "unwrapped", self.env), "world", None)
+        if world is None:
+            return {"agents": {}, "landmarks": {}}
+
+        agents = {
+            agent.name: np.asarray(agent.state.p_pos, dtype=np.float32)
+            for agent in world.agents
+        }
+        landmarks = {
+            f"landmark_{idx}": np.asarray(landmark.state.p_pos, dtype=np.float32)
+            for idx, landmark in enumerate(world.landmarks)
+        }
+        return {"agents": agents, "landmarks": landmarks}
 
     def close(self) -> None:
         """Close the underlying environment."""

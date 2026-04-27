@@ -1,9 +1,4 @@
-"""Training entry point.
-
-The first project iteration supports a random-policy smoke test. Future IPPO,
-MAPPO-style, and LLM-assisted training modes should be added behind this same
-config-driven entry point.
-"""
+"""Config-driven training entry point."""
 
 from __future__ import annotations
 
@@ -15,6 +10,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.algorithms.ippo import IPPOTrainer
+from src.algorithms.mappo import MAPPOTrainer
 from src.envs.simple_spread_wrapper import SimpleSpreadWrapper, run_random_rollout
 from src.utils import load_yaml, set_global_seed, write_dict_rows
 
@@ -29,9 +26,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["random"],
-        default="random",
-        help="Execution mode. Only random smoke test is implemented in iteration 1.",
+        choices=["auto", "random", "ippo", "mappo", "llm_guided_ippo"],
+        default="auto",
+        help="Execution mode. 'auto' reads algorithm.name from config.",
     )
     parser.add_argument("--seed", type=int, default=None, help="Override the config seed.")
     parser.add_argument("--episodes", type=int, default=None, help="Override the config episode count.")
@@ -41,6 +38,31 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config = load_yaml(args.config)
+    algorithm_name = str(config.get("algorithm", {}).get("name", "random"))
+    mode = algorithm_name if args.mode == "auto" else args.mode
+
+    if args.seed is not None:
+        config.setdefault("training", {})["seed"] = args.seed
+        config.setdefault("rollout", {})["seed"] = args.seed
+    if args.episodes is not None:
+        config.setdefault("training", {})["total_episodes"] = args.episodes
+        config.setdefault("rollout", {})["episodes"] = args.episodes
+
+    if mode in {"ippo", "llm_guided_ippo"}:
+        trainer = IPPOTrainer(config)
+        try:
+            trainer.train()
+        finally:
+            trainer.close()
+        return
+
+    if mode == "mappo":
+        trainer = MAPPOTrainer(config)
+        try:
+            trainer.train()
+        finally:
+            trainer.close()
+        return
 
     rollout_config = config.get("rollout", {})
     logging_config = config.get("logging", {})
@@ -69,7 +91,7 @@ def main() -> None:
         mean_coverage = 0.0
         mean_collision_rate = 0.0
 
-    print(f"Mode: {args.mode}")
+    print(f"Mode: {mode}")
     print(f"Episodes: {episodes}")
     print(f"Seed: {seed}")
     print(f"Mean episode return: {mean_return:.3f}")
