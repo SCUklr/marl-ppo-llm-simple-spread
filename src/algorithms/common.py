@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import platform
 from typing import Any
 
 import numpy as np
@@ -140,3 +141,25 @@ def device_from_config(config: dict[str, Any]) -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def device_summary(device: torch.device) -> dict[str, Any]:
+    """Return a compact runtime summary for experiment logs."""
+    summary: dict[str, Any] = {
+        "device": str(device),
+        "platform": platform.platform(),
+        "python": platform.python_version(),
+        "torch_version": torch.__version__,
+        "cuda_available": torch.cuda.is_available(),
+        "mps_available": torch.backends.mps.is_available(),
+    }
+    if device.type == "cuda" and torch.cuda.is_available():
+        index = device.index if device.index is not None else torch.cuda.current_device()
+        props = torch.cuda.get_device_properties(index)
+        summary["device_name"] = props.name
+        summary["device_capability"] = f"{props.major}.{props.minor}"
+    elif device.type == "mps":
+        summary["device_name"] = "Apple Metal"
+    else:
+        summary["device_name"] = "CPU"
+    return summary

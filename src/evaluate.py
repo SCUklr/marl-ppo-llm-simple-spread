@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.algorithms.common import GaussianActor, device_from_config, tensor
+from src.algorithms.common import GaussianActor, device_from_config, device_summary, tensor
 from src.envs.simple_spread_wrapper import SimpleSpreadWrapper
 from src.utils import load_yaml, write_dict_rows
 
@@ -45,6 +45,7 @@ def build_actor(config: dict, env: SimpleSpreadWrapper, device: torch.device) ->
 def evaluate(config: dict, checkpoint_path: Path, episodes: int, seed: int) -> list[dict[str, float | int | str]]:
     env = SimpleSpreadWrapper.from_dict(config.get("environment", {}))
     device = device_from_config(config.get("training", {}))
+    runtime = device_summary(device)
     actor = build_actor(config, env, device)
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     actor.load_state_dict(checkpoint["actor"])
@@ -88,6 +89,8 @@ def evaluate(config: dict, checkpoint_path: Path, episodes: int, seed: int) -> l
                     "episode_return": episode_return,
                     "coverage_distance": final_coverage,
                     "collision_rate": collision_sum / max(step_count, 1),
+                    "device": runtime["device"],
+                    "device_name": runtime["device_name"],
                 }
             )
     finally:
@@ -99,12 +102,17 @@ def evaluate(config: dict, checkpoint_path: Path, episodes: int, seed: int) -> l
 def main() -> None:
     args = parse_args()
     config = load_yaml(args.config)
+    runtime = device_summary(device_from_config(config.get("training", {})))
     rows = evaluate(config, args.checkpoint, args.episodes, args.seed)
     write_dict_rows(args.output, rows)
     mean_return = float(np.mean([row["episode_return"] for row in rows]))
     mean_coverage = float(np.mean([row["coverage_distance"] for row in rows]))
     mean_collision = float(np.mean([row["collision_rate"] for row in rows]))
     print(f"Evaluated {args.checkpoint}")
+    print(
+        f"Runtime device: {runtime['device']} ({runtime['device_name']}) "
+        f"cuda_available={runtime['cuda_available']}"
+    )
     print(f"Mean return: {mean_return:.3f}")
     print(f"Mean coverage distance: {mean_coverage:.3f}")
     print(f"Mean collision rate: {mean_collision:.3f}")

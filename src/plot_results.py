@@ -22,17 +22,34 @@ def parse_args() -> argparse.Namespace:
         help="Training log CSV files or glob patterns.",
     )
     parser.add_argument("--output_dir", type=Path, default=Path("results"))
+    parser.add_argument(
+        "--latest_run_only",
+        action="store_true",
+        help="Use only the latest contiguous run from each log file.",
+    )
     return parser.parse_args()
 
 
-def load_logs(paths: list[str]) -> pd.DataFrame:
+def latest_run_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Keep only the newest run when a log file contains appended reruns."""
+    if frame.empty or "episode" not in frame.columns:
+        return frame
+    reset_points = frame["episode"].diff().fillna(0) < 0
+    if not reset_points.any():
+        return frame
+    start_idx = reset_points[reset_points].index[-1]
+    return frame.loc[start_idx:].reset_index(drop=True)
+
+
+def load_logs(paths: list[str], latest_run_only: bool = False) -> pd.DataFrame:
     frames = []
     for path in paths:
         matches = sorted(glob.glob(path))
         if not matches and Path(path).exists():
             matches = [path]
         for match in matches:
-            frames.append(pd.read_csv(match))
+            frame = pd.read_csv(match)
+            frames.append(latest_run_frame(frame) if latest_run_only else frame)
     if not frames:
         raise FileNotFoundError("No log files found. Run training before plotting.")
     return pd.concat(frames, ignore_index=True)
@@ -65,7 +82,7 @@ def save_summary_table(df: pd.DataFrame, output_path: Path) -> None:
 
 def main() -> None:
     args = parse_args()
-    df = load_logs(args.log_paths)
+    df = load_logs(args.log_paths, latest_run_only=args.latest_run_only)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     save_metric_plot(
         df,

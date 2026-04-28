@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,15 @@ DEFAULT_RUNS = [
 ]
 
 
+def default_python_path() -> Path:
+    """Use the active venv when present, otherwise choose a platform default."""
+    if os.environ.get("VIRTUAL_ENV"):
+        return Path(sys.executable)
+    if os.name == "nt":
+        return Path(".venv/Scripts/python.exe")
+    return Path(".venv/bin/python")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run lightweight Simple Spread experiments.")
     parser.add_argument("--episodes", type=int, default=500, help="Episodes per method/seed run.")
@@ -22,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--python",
         type=Path,
-        default=Path(".venv/bin/python"),
+        default=default_python_path(),
         help="Python executable to use.",
     )
     parser.add_argument(

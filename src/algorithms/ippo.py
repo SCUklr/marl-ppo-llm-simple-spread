@@ -10,6 +10,7 @@ import torch
 from torch import nn
 
 from src.algorithms.common import (
+    device_summary,
     GaussianActor,
     RolloutBatch,
     ValueCritic,
@@ -35,6 +36,7 @@ class IPPOTrainer:
         self.seed = int(training.get("seed", 0))
         set_global_seed(self.seed)
         self.device = device_from_config(training)
+        self.runtime = device_summary(self.device)
 
         obs_dim = self.env.observation_dim()
         action_dim = self.env.action_dim()
@@ -79,6 +81,11 @@ class IPPOTrainer:
             logging.get("checkpoint_path", "checkpoints/ippo_seed_{seed}_best.pt")
         ).format(**path_values)
         self.guidance = GuidanceProvider(config.get("llm_guidance", {}))
+        print(
+            f"[{self.method.upper()}] seed={self.seed} device={self.runtime['device']} "
+            f"name={self.runtime['device_name']} cuda_available={self.runtime['cuda_available']}",
+            flush=True,
+        )
 
     def collect_rollouts(self, start_episode: int) -> tuple[RolloutBatch, list[dict[str, float | int]]]:
         """Collect several full episodes and flatten per-agent samples."""
@@ -156,6 +163,9 @@ class IPPOTrainer:
                     "coverage_distance": final_coverage,
                     "collision_rate": collision_sum / max(step_count, 1),
                     "method": self.method,
+                    "device": self.runtime["device"],
+                    "device_name": self.runtime["device_name"],
+                    "guidance_source": guidance_decision.source if guidance_decision else "none",
                 }
             )
 

@@ -15,6 +15,12 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+You can also use the bootstrap helper to create the environment and run a runtime check:
+
+```bash
+python3 scripts/setup_env.py --python python3
+```
+
 If the local Python installation cannot bootstrap `pip`, use `uv` instead:
 
 ```bash
@@ -23,6 +29,14 @@ uv pip install --python .venv/bin/python -r requirements.txt
 ```
 
 For an RTX 4070 Windows / WSL2 machine, install the CUDA-enabled PyTorch wheel according to the official PyTorch selector if the default `torch` wheel does not detect CUDA.
+
+The project imports `simple_spread_v3` from `pettingzoo.mpe`, so keep the pinned `pettingzoo[mpe]==1.24.3` dependency from `requirements.txt`. Newer `pettingzoo` releases remove that import path and will break smoke tests.
+
+Verify the runtime device selection before long runs:
+
+```bash
+.venv/bin/python scripts/verify_runtime.py
+```
 
 ## Smoke Test
 
@@ -51,6 +65,12 @@ Run short smoke tests first:
 .venv/bin/python src/train.py --config configs/ippo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/mappo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 4 --seed 0
+```
+
+Or run the combined smoke-test helper:
+
+```bash
+.venv/bin/python scripts/run_smoke_tests.py
 ```
 
 Run the lightweight official experiment suite:
@@ -95,6 +115,12 @@ Generate plots from training logs:
 
 ```bash
 .venv/bin/python src/plot_results.py --output_dir results
+```
+
+Generate a compact markdown summary of the available artifacts:
+
+```bash
+.venv/bin/python scripts/summarize_results.py
 ```
 
 ## Documentation

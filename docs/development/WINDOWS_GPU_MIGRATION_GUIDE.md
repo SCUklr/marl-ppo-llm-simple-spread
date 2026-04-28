@@ -159,6 +159,22 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+If your WSL image is missing `pip` / `venv`, install `uv` in user space and let it manage Python and the virtual environment:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.local/bin/env
+uv python install 3.11
+uv venv --python 3.11 --clear .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+```
+
+You can also use the repo helper after `uv` is available:
+
+```bash
+python3 scripts/setup_env.py --python 3.11 --backend uv
+```
+
 If the default PyTorch wheel does not detect CUDA, install the CUDA-enabled wheel using the official PyTorch install selector, then verify:
 
 ```bash
@@ -166,6 +182,14 @@ python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_
 ```
 
 If this prints `True` and shows your NVIDIA GPU, the project should be able to use CUDA automatically.
+
+You can also write a runtime report for the project configs:
+
+```bash
+.venv/bin/python scripts/verify_runtime.py
+```
+
+Important compatibility note: keep the pinned `pettingzoo[mpe]==1.24.3` dependency from `requirements.txt`. The current code imports `simple_spread_v3` from `pettingzoo.mpe`, and newer `pettingzoo` releases remove that path.
 
 ## 7. How To Run the Experiments on the Gaming Laptop
 
@@ -175,6 +199,12 @@ If this prints `True` and shows your NVIDIA GPU, the project should be able to u
 .venv/bin/python src/train.py --config configs/ippo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/mappo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 4 --seed 0
+```
+
+Or run the smoke-test helper:
+
+```bash
+.venv/bin/python scripts/run_smoke_tests.py
 ```
 
 Purpose:
@@ -247,6 +277,12 @@ Recommended order:
 6. If everything looks correct, run the 500-episode suite.
 7. Generate plots.
 8. Copy the final small results or commit the useful outputs back to GitHub.
+
+To finish the run package, create a compact artifact summary:
+
+```bash
+.venv/bin/python scripts/summarize_results.py
+```
 
 ## 10. Bottom-Line Recommendation
 
