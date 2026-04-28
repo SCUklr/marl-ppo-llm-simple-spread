@@ -1,8 +1,19 @@
 # MARL PPO LLM Simple Spread
 
-This project studies multi-agent reinforcement learning on PettingZoo Simple Spread. The planned methods are Independent PPO (IPPO), a MAPPO-style centralized critic comparison, and optional LLM-assisted high-level guidance.
+This project studies cooperative multi-agent reinforcement learning on PettingZoo `simple_spread_v3`. The repository now includes a working experiment pipeline for three methods:
 
-The current implementation provides the project scaffold, a random-policy smoke test, IPPO training, a MAPPO-style centralized critic baseline, optional heuristic LLM guidance, evaluation, and plotting.
+- `IPPO`: decentralized PPO baseline
+- `MAPPO-style PPO`: decentralized actors with a centralized critic
+- `LLM-guided IPPO`: IPPO with optional Qwen-based high-level guidance
+
+The current repository state is no longer a scaffold. It already contains:
+
+- a working Simple Spread environment wrapper
+- config-driven training, evaluation, and plotting
+- logging and checkpoint saving
+- multi-seed lightweight experiments (`3 methods x 3 seeds x 500 episodes`)
+- independent evaluation CSVs for saved checkpoints
+- summary figures and artifact reports under `results/`
 
 ## Setup
 
@@ -57,6 +68,19 @@ Expected output:
 - Summary metrics printed in the terminal.
 - A CSV log saved to `logs/random_rollout.csv`.
 
+You can also run the combined smoke-test helper:
+
+```bash
+.venv/bin/python scripts/run_smoke_tests.py
+```
+
+This helper runs:
+
+- runtime / CUDA verification
+- LLM provider smoke test
+- random rollout
+- short IPPO / MAPPO / LLM-guided training runs
+
 ## Training Commands
 
 Run short smoke tests first:
@@ -65,12 +89,6 @@ Run short smoke tests first:
 .venv/bin/python src/train.py --config configs/ippo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/mappo.yaml --episodes 4 --seed 0
 .venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 4 --seed 0
-```
-
-Or run the combined smoke-test helper:
-
-```bash
-.venv/bin/python scripts/run_smoke_tests.py
 ```
 
 Run the lightweight official experiment suite:
@@ -99,6 +117,24 @@ Single-seed runs are also supported:
 .venv/bin/python src/train.py --config configs/llm_guidance.yaml --episodes 500 --seed 0
 ```
 
+## Current Result Snapshot
+
+The latest lightweight comparison table is stored at `results/comparison_table.csv`:
+
+```text
+method,final_return,coverage_distance,collision_rate
+ippo,-78.25060071097664,0.746018723398447,0.035386666666666663
+llm_guided_ippo,-78.2281157052123,0.7454061506787936,0.0356
+mappo,-78.33457561161909,0.7485137739082177,0.03442666666666667
+```
+
+Interpretation:
+
+- all three methods run successfully under the same lightweight setting
+- `llm_guided_ippo` is slightly better on return / coverage
+- `mappo` is slightly better on collision rate
+- the differences are small, so the current results support a "methods are comparable" conclusion rather than a strong winner claim
+
 ## Evaluation and Plotting
 
 Evaluate a saved checkpoint:
@@ -108,32 +144,36 @@ Evaluate a saved checkpoint:
   --config configs/ippo.yaml \
   --checkpoint checkpoints/ippo_seed_0_best.pt \
   --episodes 10 \
-  --output results/ippo_eval.csv
+  --seed 10000 \
+  --output results/ippo_seed_0_eval.csv
 ```
 
 Generate plots from training logs:
 
 ```bash
-.venv/bin/python src/plot_results.py --output_dir results
+.venv/bin/python src/plot_results.py --latest_run_only --output_dir results
 ```
 
 Generate a compact markdown summary of the available artifacts:
 
 ```bash
-.venv/bin/python scripts/summarize_results.py
+.venv/bin/python scripts/summarize_results.py --latest_run_only
 ```
+
+The repository already contains:
+
+- 9 training logs under `logs/`
+- 9 best checkpoints under `checkpoints/`
+- 9 independent evaluation CSVs under `results/`
+- summary figures and `results/experiment_summary.md`
 
 ## Documentation
 
 Supporting documents are grouped under `docs/`:
 
-- `docs/development/DEVELOPMENT_PLAN.md`
 - `docs/development/TECHNICAL_DOCUMENTATION.md`
 - `docs/development/WINDOWS_GPU_MIGRATION_GUIDE.md`
-- `docs/report/PROJECT_REPORT_DRAFT.md`
-- `docs/report/theme_5_project_environment.md`
 - `docs/submission/SUBMISSION_CHECKLIST.md`
-- `docs/references/resources.md`
 
 ## Project Structure
 
@@ -146,11 +186,14 @@ marl-ppo-llm-simple-spread/
 │   └── llm_guidance.yaml
 ├── docs/
 │   ├── development/
-│   ├── report/
-│   ├── submission/
-│   └── references/
+│   └── submission/
 ├── scripts/
-│   └── run_lightweight_experiments.py
+│   ├── run_lightweight_experiments.py
+│   ├── run_smoke_tests.py
+│   ├── setup_env.py
+│   ├── summarize_results.py
+│   ├── test_llm_provider.py
+│   └── verify_runtime.py
 ├── src/
 │   ├── envs/
 │   │   └── simple_spread_wrapper.py
@@ -196,4 +239,4 @@ Test the provider before training:
 
 If the key works, the output should show `source=qwen`. If no key is found or the provider fails, it will show `source=heuristic` or `source=heuristic_fallback`.
 
-The lightweight config refreshes guidance every 100 episodes. With 3 seeds x 500 episodes, this means about 15 guidance refreshes for the LLM-guided method. If replaced with a real API provider, expect about 15 API calls for the default lightweight run, or 9 API calls for 3 seeds x 300 episodes.
+The lightweight config refreshes guidance every 100 episodes. With `3 seeds x 500 episodes`, this means about `15` guidance refreshes for the LLM-guided method. The implementation therefore remains an RL training pipeline with sparse high-level guidance rather than an LLM-at-every-step controller.
