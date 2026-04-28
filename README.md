@@ -19,11 +19,55 @@ The current repository state is no longer a scaffold. It already contains:
 
 Use Python 3.10 or 3.11.
 
+Recommended environment:
+
+- `WSL2 Ubuntu` on Windows for the smoothest reproduction
+- native Linux also works
+- native Windows is supported for TA checking, but replace `.venv/bin/python` with `.venv\Scripts\python.exe`
+
+If you are checking this repository on Windows PowerShell, the command mapping is:
+
+```text
+WSL / Linux:    .venv/bin/python
+Windows:        .venv\Scripts\python.exe
+```
+
+## Quick Reproduction
+
+For a fast end-to-end check, follow this order:
+
+1. Create the environment and install dependencies.
+2. Run `scripts/verify_runtime.py`.
+3. Run `scripts/run_smoke_tests.py`.
+4. Run the lightweight experiment suite.
+5. Regenerate plots and the markdown summary.
+
+Minimal reproduction commands:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+.venv/bin/python scripts/verify_runtime.py
+.venv/bin/python scripts/run_smoke_tests.py
+.venv/bin/python scripts/run_lightweight_experiments.py --episodes 500 --seeds 0 1 2
+.venv/bin/python src/plot_results.py --latest_run_only --output_dir results
+.venv/bin/python scripts/summarize_results.py --latest_run_only
+```
+
+Equivalent PowerShell commands:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+.\.venv\Scripts\python.exe scripts\verify_runtime.py
+.\.venv\Scripts\python.exe scripts\run_smoke_tests.py
+.\.venv\Scripts\python.exe scripts\run_lightweight_experiments.py --episodes 500 --seeds 0 1 2
+.\.venv\Scripts\python.exe src\plot_results.py --latest_run_only --output_dir results
+.\.venv\Scripts\python.exe scripts\summarize_results.py --latest_run_only
 ```
 
 You can also use the bootstrap helper to create the environment and run a runtime check:
@@ -47,6 +91,12 @@ Verify the runtime device selection before long runs:
 
 ```bash
 .venv/bin/python scripts/verify_runtime.py
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\verify_runtime.py
 ```
 
 ## Smoke Test
@@ -74,6 +124,12 @@ You can also run the combined smoke-test helper:
 .venv/bin/python scripts/run_smoke_tests.py
 ```
 
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_smoke_tests.py
+```
+
 This helper runs:
 
 - runtime / CUDA verification
@@ -95,6 +151,12 @@ Run the lightweight official experiment suite:
 
 ```bash
 .venv/bin/python scripts/run_lightweight_experiments.py --episodes 500 --seeds 0 1 2
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_lightweight_experiments.py --episodes 500 --seeds 0 1 2
 ```
 
 This runs 3 methods x 3 seeds:
@@ -124,7 +186,7 @@ The latest lightweight comparison table is stored at `results/comparison_table.c
 ```text
 method,final_return,coverage_distance,collision_rate
 ippo,-78.25060071097664,0.746018723398447,0.035386666666666663
-llm_guided_ippo,-78.2281157052123,0.7454061506787936,0.0356
+llm_guided_ippo,-78.22829274665841,0.7454045019745826,0.03562666666666667
 mappo,-78.33457561161909,0.7485137739082177,0.03442666666666667
 ```
 
@@ -148,10 +210,22 @@ Evaluate a saved checkpoint:
   --output results/ippo_seed_0_eval.csv
 ```
 
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe src\evaluate.py --config configs\ippo.yaml --checkpoint checkpoints\ippo_seed_0_best.pt --episodes 10 --seed 10000 --output results\ippo_seed_0_eval.csv
+```
+
 Generate plots from training logs:
 
 ```bash
 .venv/bin/python src/plot_results.py --latest_run_only --output_dir results
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe src\plot_results.py --latest_run_only --output_dir results
 ```
 
 Generate a compact markdown summary of the available artifacts:
@@ -159,6 +233,20 @@ Generate a compact markdown summary of the available artifacts:
 ```bash
 .venv/bin/python scripts/summarize_results.py --latest_run_only
 ```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\summarize_results.py --latest_run_only
+```
+
+Files that should appear after reproduction:
+
+- training logs in `logs/`
+- best checkpoints in `checkpoints/`
+- figures in `results/`
+- summary table in `results/comparison_table.csv`
+- artifact summary in `results/experiment_summary.md`
 
 The repository already contains:
 
@@ -209,13 +297,12 @@ marl-ppo-llm-simple-spread/
 │   └── utils.py
 ├── logs/
 ├── checkpoints/
-├── results/
-└── notebooks/
+└── results/
 ```
 
 ## Machine Usage
 
-Develop and run short tests on the MacBook Pro. Run full multi-seed experiments on the RTX 4070 laptop if the final training time becomes too long. The project can still be completed locally on the MacBook because Simple Spread uses lightweight MLP policies and does not require MuJoCo.
+The current validated lightweight runs were executed on `WSL2 Ubuntu` with an `RTX 4070 Laptop GPU`. Development and smoke tests can also be done on CPU-only environments, but the checked-in runtime summary reflects the WSL2 + CUDA setup in `results/runtime_check.json`.
 
 ## LLM API Keys
 
@@ -235,6 +322,12 @@ Test the provider before training:
 
 ```bash
 .venv/bin/python scripts/test_llm_provider.py --config configs/llm_guidance.yaml
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\test_llm_provider.py --config configs\llm_guidance.yaml
 ```
 
 If the key works, the output should show `source=qwen`. If no key is found or the provider fails, it will show `source=heuristic` or `source=heuristic_fallback`.
