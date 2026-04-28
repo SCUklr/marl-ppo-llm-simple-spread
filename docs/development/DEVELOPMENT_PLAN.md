@@ -266,11 +266,11 @@ Expected output:
 
 Tasks:
 
-- Fill in `PROJECT_REPORT_DRAFT.md` with actual results.
+- Fill in `docs/report/PROJECT_REPORT_DRAFT.md` with actual results.
 - Export final `REPORT.pdf`.
 - Complete `README.md`.
 - Finalize `requirements.txt`.
-- Check `SUBMISSION_CHECKLIST.md`.
+- Check `docs/submission/SUBMISSION_CHECKLIST.md`.
 - Remove secrets and unnecessary large files.
 - Create final zip package.
 
@@ -281,7 +281,9 @@ marl-ppo-llm-simple-spread.zip
 ├── README.md
 ├── requirements.txt
 ├── REPORT.pdf
-├── SUBMISSION_CHECKLIST.md
+├── docs/
+│   └── submission/
+│       └── SUBMISSION_CHECKLIST.md
 ├── src/
 ├── configs/
 ├── results/

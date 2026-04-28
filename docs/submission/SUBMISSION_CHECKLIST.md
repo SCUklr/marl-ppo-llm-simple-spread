@@ -75,7 +75,9 @@ marl-ppo-llm-simple-spread.zip
 ├── README.md
 ├── requirements.txt
 ├── REPORT.pdf                    # Final project report
-├── SUBMISSION_CHECKLIST.md       # This file
+├── docs/
+│   └── submission/
+│       └── SUBMISSION_CHECKLIST.md
 ├── src/
 │   ├── envs/
 │   │   └── simple_spread_wrapper.py

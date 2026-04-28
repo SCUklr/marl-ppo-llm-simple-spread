@@ -165,8 +165,11 @@ We formulate the multi-agent task as a **Decentralized Partially Observable Mark
 marl-ppo-llm-simple-spread/
 ├── README.md
 ├── requirements.txt
-├── PROJECT_REPORT_DRAFT.md
-├── SUBMISSION_CHECKLIST.md
+├── docs/
+│   ├── report/
+│   │   └── PROJECT_REPORT_DRAFT.md
+│   └── submission/
+│       └── SUBMISSION_CHECKLIST.md
 ├── src/
 │   ├── envs/
 │   │   └── simple_spread_wrapper.py

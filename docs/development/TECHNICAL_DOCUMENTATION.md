@@ -265,4 +265,4 @@ The final submission should include:
 - Final report PDF.
 - Results figures under `results/`.
 - Optional logs and checkpoints if file size allows.
-- `SUBMISSION_CHECKLIST.md`.
+- `docs/submission/SUBMISSION_CHECKLIST.md`.

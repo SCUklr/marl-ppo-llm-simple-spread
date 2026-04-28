@@ -97,6 +97,18 @@ Generate plots from training logs:
 .venv/bin/python src/plot_results.py --output_dir results
 ```
 
+## Documentation
+
+Supporting documents are grouped under `docs/`:
+
+- `docs/development/DEVELOPMENT_PLAN.md`
+- `docs/development/TECHNICAL_DOCUMENTATION.md`
+- `docs/development/WINDOWS_GPU_MIGRATION_GUIDE.md`
+- `docs/report/PROJECT_REPORT_DRAFT.md`
+- `docs/report/theme_5_project_environment.md`
+- `docs/submission/SUBMISSION_CHECKLIST.md`
+- `docs/references/resources.md`
+
 ## Project Structure
 
 ```text
@@ -106,6 +118,11 @@ marl-ppo-llm-simple-spread/
 │   ├── ippo.yaml
 │   ├── mappo.yaml
 │   └── llm_guidance.yaml
+├── docs/
+│   ├── development/
+│   ├── report/
+│   ├── submission/
+│   └── references/
 ├── scripts/
 │   └── run_lightweight_experiments.py
 ├── src/
