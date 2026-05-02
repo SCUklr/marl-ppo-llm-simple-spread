@@ -7,6 +7,8 @@ __pycache__/
 
 logs/
 checkpoints/
-results/
 wandb/
 runs/
+
+# Generated submission bundle (copy for zipping; do not commit large duplicates)
+submit/
